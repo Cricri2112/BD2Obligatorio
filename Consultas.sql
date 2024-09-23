@@ -15,17 +15,17 @@ WHERE g.propietarioDocumento = p.propietarioDocumento and
 		  FROM Habitacion h2
 	  )
 ORDER BY r.reservaFechaInicio DESC
---Falta verificar habitacion con la capacidad más alta
 
 --b. Mostrar los 3 servicios más solicitados, con su nombre, precio y cantidad total solicitada en el año anterior. Solo listar el servicio si cumple que tiene una cantidad total solicitada mayor o igual que 5
 
-SELECT TOP 3 s.servicioNombre, s.servicioPrecio, SUM(rs.cantidad) 
+SELECT TOP 3 s.servicioNombre, s.servicioPrecio, SUM(rs.cantidad) AS CantidadSolicitada
 FROM Servicio s, Reserva_Servicio rs, Reserva r
 WHERE rs.reservaID = r.reservaID and
 	  rs.servicioNombre = s.servicioNombre and
 	  YEAR(r.reservaFechaInicio) = YEAR(GETDATE())-1
 GROUP BY s.servicioNombre, s.servicioPrecio
 HAVING SUM(rs.cantidad) >= 5
+ORDER BY CantidadSolicitada DESC
 
 
 --c. Listar nombre de gato y nombre de habitación para las reservas que tienen asociados todos los servicios adicionales disponibles
@@ -37,13 +37,38 @@ WHERE g.gatoID = r.gatoID and
 	  rs.reservaID = r.reservaID and
 	  rs.servicioNombre = s.servicioNombre 
 GROUP BY g.gatoNombre, h.habitacionNombre
-HAVING COUNT(DISTINCT(rs.servicioNombre)) = 
+HAVING COUNT(DISTINCT(rs.servicioNombre)) =
 	   (SELECT COUNT(servicioNombre) FROM Servicio)
-
 
 --d. Listar monto total de reserva por año y por gato (nombre) para los gatos que tienen más de 10 años de edad, son de raza "Persa" y que en el año tuvieron montos total de reserva superior a 500 dólares.
 
+SELECT g.gatoNombre, SUM(r.reservaMonto) AS [Monto total]
+FROM Gato g
+INNER JOIN Reserva r ON r.gatoID = g.gatoID
+WHERE g.gatoEdad > 10 AND
+	  g.gatoRaza = 'Persa' AND
+	  YEAR(r.reservaFechaInicio) = YEAR(GETDATE())
+GROUP BY g.gatoNombre
+HAVING SUM(r.reservaMonto) > 500
+
+
 --e. Mostrar el ranking de reservas más caras, tomando como monto total de una reserva el monto propio de la reserva más los servicios adicionales contratados en la reserva
+
+SELECT TOP 10 r.gatoID, r.habitacionNombre, r.reservaFechaInicio, r.reservaFechaFin, r.reservaID, (
+SELECT PrecioTotalServicios
+			FROM (SELECT rs2.reservaID, (SUM(rs2.cantidad*s2.servicioPrecio)+r2.reservaMonto)AS PrecioTotalServicios
+			FROM Reserva_Servicio rs2
+			INNER JOIN Servicio s2 ON s2.servicioNombre = rs2.servicioNombre
+			INNER JOIN Reserva r2 ON r2.reservaID = rs2.reservaID
+			WHERE rs2.reservaID = r.reservaID
+			GROUP BY rs2.reservaID, r2.reservaMonto) AS Subconsulta
+) AS TotalPorReservaYServicio
+FROM Reserva r
+INNER JOIN Reserva_Servicio rs ON rs.reservaID = r.reservaID
+INNER JOIN Servicio s ON rs.servicioNombre = s.servicioNombre
+GROUP BY r.gatoID, r.habitacionNombre, r.reservaFechaInicio, r.reservaFechaFin, r.reservaID
+ORDER BY TotalPorReservaYServicio  DESC
+
 
 --f. Calcular el promedio de duración en días de las reservas realizadas durante el año en curso. Deben ser consideradas solo aquellas reservas en las que se contrató el servicio "CONTROL_PARASITOS" pero no se contrató el servicio "REVISION_VETERINARIA"
 
