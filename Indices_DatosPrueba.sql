@@ -6,6 +6,7 @@ CREATE INDEX idx_GatoReserva ON Reserva (gatoID)
 
 CREATE INDEX idx_HabitacionReserva ON Reserva (habitacionNombre)
 
+
 INSERT INTO Propietario (propietarioDocumento, propietarioNombre, propietarioTelefono, propietarioEmail)
 VALUES 
 ('12345672', 'Alejandro Torres', '+598 91 234 567', 'alejandro.torres@gmail.com'),
