@@ -1,7 +1,5 @@
 USE CatHotel
 
-
-
 --3. Utilizando SQL implementar las siguientes consultas:
 --a. Mostrar el nombre del gato, el nombre del propietario, la habitación y el monto de la reserva más reciente en la(s) habitación con la capacidad más alta
 

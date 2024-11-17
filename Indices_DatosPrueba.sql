@@ -1,11 +1,11 @@
 USE CatHotel
-
+GO
 CREATE INDEX idx_PropietarioGato ON Gato (propietarioDocumento)
-
+GO
 CREATE INDEX idx_GatoReserva ON Reserva (gatoID)
-
+GO
 CREATE INDEX idx_HabitacionReserva ON Reserva (habitacionNombre)
-
+GO
 
 INSERT INTO Propietario (propietarioDocumento, propietarioNombre, propietarioTelefono, propietarioEmail)
 VALUES 
@@ -21,7 +21,7 @@ VALUES
 ('75984413', 'Jorge Salazar', '+598 2612 3456', 'jorge.salazar@gmail.com'),
 ('60150754', 'Karina Paredes', '+598 2623 4567', NULL),
 ('15450103', 'Luis Ortega', '+598 2201 2345', 'luis.ortega@outlook.com');
-
+GO
 
 INSERT INTO Gato (gatoNombre, gatoRaza, gatoEdad, gatoPeso, propietarioDocumento)
 VALUES 
@@ -57,7 +57,7 @@ VALUES
 ('Chloe', 'Siberiano', 5, 6.9, '51953448'),
 ('Cleo', 'Siames', 3, 4.3, '14406662'),
 ('Felix', 'Bengalí', 3, 6.5, '35569956');
-
+GO
 
 INSERT INTO Habitacion (habitacionNombre, habitacionCapacidad, habitacionPrecio, habitacionEstado) VALUES
 ('El Rascador', 3, 80, 'DISPONIBLE'),
@@ -69,6 +69,8 @@ INSERT INTO Habitacion (habitacionNombre, habitacionCapacidad, habitacionPrecio,
 ('El Árbol', 5, 50, 'DISPONIBLE'),
 ('La Estantería', 7, 30, 'LLENA'),
 ('La Caja', 4, 70, 'DISPONIBLE');
+GO
+
 
 INSERT INTO Reserva (gatoID, habitacionNombre, reservaFechaInicio, reservaFechaFin, reservaMonto) VALUES
 (31, 'La Caja', '2024-03-23', '2024-04-04', 910),
@@ -129,7 +131,7 @@ INSERT INTO Reserva (gatoID, habitacionNombre, reservaFechaInicio, reservaFechaF
 (7, 'La Almohada', '2023-11-21', '2023-11-22', 100),
 (27, 'El Mirador', '2024-01-05', '2024-01-08', 280),
 (13, 'La Estantería', '2023-01-09', '2023-01-10', 60);
-
+GO
 
 INSERT INTO Servicio (servicioNombre, servicioPrecio) VALUES
 ('CONTROL_PARASITOS', 35),
@@ -139,7 +141,7 @@ INSERT INTO Servicio (servicioNombre, servicioPrecio) VALUES
 ('CORTE_DE_UNAS', 15),
 ('ALIMENTACION_ESPECIAL', 25),
 ('JUEGO_GUIADO', 10);
-
+GO
 
 INSERT INTO Reserva_Servicio(reservaID, servicioNombre, cantidad) VALUES
 (17,'CONTROL_PARASITOS',1),
