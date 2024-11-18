@@ -8,6 +8,8 @@ No permitir realizar la reserva si el estado de la habitación es LLENA o LIMPIAN
 Se debe retornar el número de reserva asignado (cero sino se logró reservar) 
 */
 
+
+
 CREATE OR ALTER PROCEDURE SP_EJ4A
 	@NombreHabitacion CHAR(30), 
 	@GatoID INT,
@@ -178,7 +180,7 @@ CREATE OR ALTER TRIGGER TR_EJ5A ON Reserva
 AFTER INSERT, UPDATE
 AS
 BEGIN
-
+SET NOCOUNT ON
 	IF exists(select 1 from deleted) BEGIN
 		IF UPDATE(ReservaMonto)
 		INSERT INTO ReservaLog(Accion, ReservaID, GatoID, HabitacionNombre, ReservaFechaInicio, ReservaFechaFin, ReservaMonto, NuevaReservaMonto)
@@ -214,3 +216,117 @@ b. Antes de insertar una nueva reserva, se debe controlar posibles solapamientos
 		(un gato no podría estar alojado simultáneamente 2 veces en el hotel).
 		Se debe dar de alta las reservas válidas y simplemente ignorar las reservas solapadas 
 */
+
+CREATE OR ALTER TRIGGER TR_EJ5B ON Reserva
+INSTEAD OF INSERT
+AS
+BEGIN
+SET NOCOUNT ON
+
+INSERT INTO Reserva (gatoID, habitacionNombre, reservaFechaInicio, reservaFechaFin, reservaMonto)
+SELECT i.gatoID, i.habitacionNombre, i.reservaFechaInicio, i.reservaFechaFin, i.reservaMonto
+FROM inserted i
+WHERE i.gatoID NOT IN (
+		SELECT r.gatoID 
+		FROM Reserva r
+		WHERE i.reservaFechaInicio <= r.reservaFechaFin AND 
+			  i.reservaFechaFin >= r.reservaFechaInicio
+		)
+END
+
+INSERT INTO Reserva 
+VALUES (5, 'El Rascador', '2024-11-17', '2024-11-20', 1200),
+		(4, 'El Rascador', '2024-11-15', '2024-11-18', 1200),
+		(12,'El Rascador', '2024-11-15', '2024-11-22', 1200),
+		(7, 'El Rascador', '2024-11-18', '2024-11-19', 1200),
+		(6, 'El Rascador', '2024-11-18', '2024-11-22', 1200)
+
+SELECT *
+FROM Reserva r
+ORDER BY reservaID DESC
+
+SELECT *
+FROM  ReservaLog
+
+EXEC SP_EJ4A 'El Rascador', 26, '2024-11-29' 
+
+/*
+6. Crear una vista que liste el monto total a facturar por propietario por las reservas y servicios del 
+mes pasado. Se debe listar el nombre del propietario, el monto total de sus reservas, el monto total 
+de servicios adicionales que contrató y la suma de ambos montos (monto a facturar) 
+*/
+CREATE OR ALTER FUNCTION F_MontoReservasMesAnterior (
+	@DocPropietario CHAR(30) 
+)
+RETURNS INT 
+BEGIN
+	DECLARE @res DECIMAL(10,2)
+		SELECT @res = ISNULL(SUM(r.reservaMonto),0)
+		FROM Reserva r
+		JOIN Gato g ON g.gatoID = r.gatoID
+		WHERE g.propietarioDocumento = @DocPropietario AND
+			  MONTH(GETDATE())-1 = MONTH(r.reservaFechaInicio) AND
+			  YEAR(GETDATE()) = YEAR(r.reservaFechaInicio)
+	RETURN @res
+END
+
+CREATE OR ALTER FUNCTION F_MontoServiciosMesAnterior (
+	@DocPropietario CHAR(30) 
+)
+RETURNS INT 
+BEGIN
+	DECLARE @res DECIMAL(10,2)
+		SELECT @res = ISNULL(SUM(rs.cantidad*s.servicioPrecio),0)
+		FROM Reserva_Servicio rs
+		JOIN Servicio s ON s.servicioNombre = rs.servicioNombre
+		JOIN Reserva r ON r.reservaID = rs.reservaID
+		JOIN Gato g ON g.gatoID = r.gatoID
+		WHERE g.propietarioDocumento = @DocPropietario AND
+			  MONTH(GETDATE())-1 = MONTH(r.reservaFechaInicio) AND
+			  YEAR(GETDATE()) = YEAR(r.reservaFechaInicio)
+	RETURN @res
+END
+
+CREATE OR ALTER VIEW View_Ej6
+AS
+SELECT p.propietarioNombre, 
+	    dbo.F_MontoReservasMesAnterior(p.propietarioDocumento) AS MontoReservas,
+		dbo.F_MontoServiciosMesAnterior(p.propietarioDocumento) AS MontoServicios,
+		dbo.F_MontoReservasMesAnterior(p.propietarioDocumento) + dbo.F_MontoServiciosMesAnterior(p.propietarioDocumento) 
+			AS MontoAFacturar		
+FROM Propietario p
+
+SELECT *
+FROM View_Ej6
+
+
+INSERT INTO Reserva 
+VALUES (1, 'El Rascador', '2024-10-17', '2024-10-20', 1200),
+		(2, 'El Rascador', '2024-10-01', '2024-10-05', 1200),
+		(3,'El Rascador', '2024-10-15', '2024-10-22', 1200),
+		(4, 'El Rascador', '2024-10-18', '2024-10-19', 1200),
+		(5, 'El Rascador', '2024-10-18', '2024-10-22', 1200),		
+		(7, 'El Rascador', '2024-10-18', '2024-10-22', 1200),
+		(8, 'El Rascador', '2024-10-18', '2024-10-22', 1200),		
+		(9, 'El Rascador', '2024-11-18', '2024-11-22', 1200),		
+		(10, 'El Rascador', '2024-11-18', '2024-11-22', 1200),		
+		(11, 'El Rascador', '2024-11-18', '2024-11-22', 1200),
+		(12, 'El Rascador', '2024-11-18', '2024-11-22', 1200),
+		(13, 'El Rascador', '2024-11-18', '2024-11-22', 1200),
+		(14, 'El Rascador', '2024-11-18', '2024-11-22', 1200),
+		(15, 'El Rascador', '2024-11-18', '2024-11-22', 1200)
+
+SELECT *
+FROM Reserva r
+ORDER BY r.reservaID DESC
+
+INSERT INTO Reserva_Servicio 
+VALUES(74, 'CONTROL_PARASITOS', 2),
+
+--CREATE TABLE Propietario (
+--    propietarioDocumento CHAR(30) PRIMARY KEY,
+--    propietarioNombre VARCHAR(100) NOT NULL,
+--    propietarioTelefono VARCHAR(20) NULL,
+--    propietarioEmail VARCHAR(100) NULL,
+--    CONSTRAINT CHK_Propietario_TelefonoEmail CHECK (propietarioTelefono IS NOT NULL OR propietarioEmail IS NOT NULL) );
+--GO
